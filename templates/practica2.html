@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de alumnos</title>
+
+   <!--Estilos de la pagina-->
+  <style>
+body {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    text-align: center;
+  }
+  /*Diseño del contenedor de los elementos*/
+  .container {
+    display: flex;
+    padding: 20px;
+    justify-content: space-evenly;
+    align-items: center;
+    text-align: center;
+    font-size: 1.2rem;
+    height: auto;
+  }
+  /*Diseño del contenedor del formulario*/
+  .container-add {
+    display: wrap;
+    width: 40%;
+    border: 2px solid black;
+    margin: 5%;
+    border-radius: 5px;
+    padding-bottom: 1rem;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    background-color: rgb(198, 153, 240);
+  }
+  /*Diseño del formulario*/
+  .form-alumnos input {
+    padding: 7px 0;
+    margin: 10px 0;
+    width: 80%;
+    border-radius: 4px;
+    border: 2px solid black;
+    padding-left: 2%;
+    box-shadow: inset 0px 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  .form-alumnos button {
+    padding: 7px 0;
+    margin: 10px 0;
+    width: 80%;
+    border-radius: 4px;
+    border: 2px solid black;
+    color: white;
+    background-color: rgb(155, 84, 221);
+  }
+  .form-alumnos button:hover {
+    background-color: rgb(112, 41, 179);
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  /*Diseño de la tabla*/
+  .container-table {
+    width: 50%;
+  }
+  .table-alumnos {
+    width: 80%;
+    border: 2px solid black;
+    border-radius: 3px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  th {
+    background-color: rgb(45, 185, 32);
+    color: white;
+  }
+  th, td {
+    padding: 1% 1%;
+  }
+  .button-table {
+    border-radius: 3px;
+    border: 2px solid black;
+    color: white;
+    background-color: rgb(140, 67, 209);
+    padding: 5px;
+  }
+  .button-table:hover {
+    background-color: rgb(102, 39, 161);
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  </style>
+</head>
+<body>
+    <h1>Gestión de Alumnos</h1>
+    <div class="container">
+        <!-- Formulario para agregar o actualizar alumno -->
+        <div class="container-add">
+            <h2 id="formTitle">Agregar Alumno</h2>
+            <form class="form-alumnos" id="addAlumnoForm">
+                <input type="hidden" id="alumnoId">
+                <input type="text" id="nombre" placeholder="Nombre" required><br>
+                <input type="text" id="telefono" placeholder="Teléfono" required><br>
+                <input type="text" id="matricula" placeholder="Matrícula" required><br>
+                <button type="submit" id="submitButton">Agregar</button>
+            </form>
+        </div>
+
+        <div class="container-table">
+            <!-- Tabla de alumnos -->
+            <table class="table-alumnos" id="alumnosTable" border="1">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Telefono</th>
+                        <th>Matricula</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadAlumnos);
+
+        // Cargar alumnos
+        function loadAlumnos() {
+            fetch('/alumnos')
+                .then(response => response.json())
+                .then(alumnos => {
+                    const tbody = document.querySelector("#alumnosTable tbody");
+                    tbody.innerHTML = "";
+                    alumnos.forEach(alumno => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${alumno.id}</td>
+                                <td>${alumno.nombre}</td>
+                                <td>${alumno.telefono}</td>
+                                <td>${alumno.matricula}</td>
+                                <td>
+                                    <button class="button-table" onclick="editAlumno(${alumno.id}, '${alumno.nombre}', '${alumno.telefono}', '${alumno.matricula}')">Editar</button>
+                                    <button class="button-table" onclick="deleteAlumno(${alumno.id})">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        // Agregar o actualizar alumno
+        document.getElementById("addAlumnoForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            const id = document.getElementById("alumnoId").value;
+            const nombre = document.getElementById("nombre").value;
+            const telefono = document.getElementById("telefono").value;
+            const matricula = document.getElementById("matricula").value;
+            if (id) {
+                // Actualizar alumno
+                fetch(`/alumnos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, telefono, matricula })
+                }).then(response => {
+                    if (response.ok) loadAlumnos();
+                });
+            } else {
+                // Agregar nuevo alumno
+                fetch('/alumnos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, telefono, matricula })
+                }).then(response => {
+                    if (response.ok) loadAlumnos();
+                });
+            }
+            // Reiniciar el formulario
+            resetForm();
+        });
+
+        // Editar alumno
+        function editAlumno(id, nombre, telefono, matricula) {
+            document.getElementById("alumnoId").value = id;
+            document.getElementById("nombre").value = nombre;
+            document.getElementById("telefono").value = telefono;
+            document.getElementById("matricula").value = matricula;
+            document.getElementById("formTitle").innerText = "Actualizar Alumno";
+            document.getElementById("submitButton").innerText = "Actualizar";
+            document.getElementById("Cancelar").innerText = "Actualizar";
+            
+        }
+
+        // Eliminar alumno
+        function deleteAlumno(id) {
+            fetch(`/alumnos/${id}`, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok) loadAlumnos();
+                });
+        }
+
+        // Reiniciar el formulario
+        function resetForm() {
+            document.getElementById("alumnoId").value = "";
+            document.getElementById("nombre").value = "";
+            document.getElementById("telefono").value = "";
+            document.getElementById("matricula").value = "";
+            document.getElementById("formTitle").innerText = "Agregar Alumno";
+            document.getElementById("submitButton").innerText = "Agregar";
+        }
+
+    </script>
+</body>
+</html>
